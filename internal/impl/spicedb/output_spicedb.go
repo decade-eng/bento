@@ -11,6 +11,7 @@ import (
 	"github.com/warpstreamlabs/bento/public/service"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/status"
 )
@@ -194,11 +195,16 @@ func (w *spiceDBWriter) Connect(_ context.Context) error {
 
 	var opts []grpc.DialOption
 	if w.tlsEnabled {
-		tlsOpt, err := grpcutil.WithSystemCerts(grpcutil.VerifyCA)
-		if err != nil {
-			return fmt.Errorf("setting up TLS: %w", err)
+		if w.tlsConf != nil {
+			opts = append(opts, grpc.WithTransportCredentials(credentials.NewTLS(w.tlsConf)))
+		} else {
+			tlsOpt, err := grpcutil.WithSystemCerts(grpcutil.VerifyCA)
+			if err != nil {
+				return fmt.Errorf("setting up TLS: %w", err)
+			}
+			opts = append(opts, tlsOpt)
 		}
-		opts = append(opts, tlsOpt, grpcutil.WithBearerToken(w.bearerToken))
+		opts = append(opts, grpcutil.WithBearerToken(w.bearerToken))
 	} else {
 		opts = append(opts,
 			grpc.WithTransportCredentials(insecure.NewCredentials()),

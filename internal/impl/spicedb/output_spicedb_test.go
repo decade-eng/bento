@@ -230,9 +230,10 @@ func TestSpiceDBWriterUnknownOperation(t *testing.T) {
 }
 
 func TestSpiceDBWriterZedTokenPropagation(t *testing.T) {
+	const token = "abc-token-xyz"
 	mock := &mockSpiceDBClient{
 		writeResponse: &authzedv1.WriteRelationshipsResponse{
-			WrittenAt: &authzedv1.ZedToken{Token: "abc-token-xyz"},
+			WrittenAt: &authzedv1.ZedToken{Token: token},
 		},
 	}
 	w := newTestWriter(mock)
@@ -244,6 +245,9 @@ func TestSpiceDBWriterZedTokenPropagation(t *testing.T) {
 
 	reqs := mock.getWriteRequests()
 	require.Len(t, reqs, 1)
+
+	expectedPayload := fmt.Sprintf(`{"written_at":%q}`, token)
+	assert.Equal(t, `{"written_at":"abc-token-xyz"}`, expectedPayload)
 }
 
 func TestSpiceDBWriterZedTokenFormat(t *testing.T) {
